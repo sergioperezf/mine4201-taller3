@@ -204,9 +204,9 @@ def fetch_movielens(data_home=None, size='100k'):
         last[user_id] = {'item': movies[item_id], 'weekday': weekday_vec}
         i = i+1
     
-    
+    pickle.dump(last, open('last.pckl', 'wb'))
     file = open('item_ids.pkl', 'wb')
-    pickle.dump(item_ids, file)
+    pickle.dump(item_ids_keyed, file)
     file.close()
 
     file = open('user_ids.pkl', 'wb')

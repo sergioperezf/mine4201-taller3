@@ -23,11 +23,11 @@
 	</div>
 	<div class="col-md-4">
 	{% if recommendations %}
-			<h2>Artistas recomendados</h2>
-			Basado en tus gustos, te recomendamos los siguientes artistas:
+			<h2>Peliculas recomendadas</h2>
+			Basado en tus gustos, te recomendamos las siguientes peliculas:
 			<ul>
-			{% for name, points in recommendations %}
-				<li><a href="https://www.last.fm/music/{{name}}" target="_blank">{{ name }}</a>.</li>
+			{% for movie in recommendations %}
+				<li>{{ movie }}</li>
 			{% endfor %}
 			</ul>
 		{% else %}

@@ -2,6 +2,17 @@ from collections import defaultdict
 import pickle
 import operator
 
+from datasets_mv.movielens import load_movies
+from flurs.recommender.fm import FMRecommender
+from flurs.evaluator import Evaluator
+from flurs.data.entity import User, Item, Event
+import numpy as np
+import logging
+import os
+import sys
+from datetime import datetime, timedelta
+import random
+
 def load_dataset():
     dataset_4 = pd.read_pickle('matriz_final.pickle')
     def get_item(key):
@@ -10,7 +21,7 @@ def load_dataset():
     return sorted_d
 
 def get_possible_movies():
-    movies = pickle.load(open('movies_names.pkl', 'rb'))
+    movies = pickle.load(open('movies_names.pckl', 'rb'))
     
     def get_item(key):
         return movies[key[0]]
@@ -18,65 +29,61 @@ def get_possible_movies():
     
     return movies
 
-def get_recommendation_by_movies(artists, user):
-    if (not len(artists)):
-        return {}
-    dataset = load_dataset()
+def recommend_service(chosen):
+    evaluator = pickle.load(open('evaluator.pckl', 'rb'))
+    user_id =  random.randint(1000000,2000000)
+    last = pickle.load(open('last.pckl', 'rb'))
+    tfidfs = pickle.load(open('movies.pckl', 'rb'))
+    item_ids_keyed = pickle.load(open('item_ids.pckl', 'rb'))
+    # 70% incremental evaluation and updating
+    logging.info('incrementally predict, evaluate and update the recommender')
+    movie_names = pickle.load(open('movies_names.pckl', 'rb'))
+    items = []
+    user = User(len(evaluator.rec.users), np.zeros(0))
 
-    dataset_4_test = dataset.copy(deep = True)
-    data = {
-            'USERID': ['user_001001' for x in artists],
-            'ARTIST_NAME': artists,
-            'VALOR': rankings}
-    x = pd.DataFrame(data = data)
-    dataset_4_test = dataset_4_test.append(x, ignore_index = True)
+    if evaluator.rec.is_new_user(user.index):
+        evaluator.rec.register_user(user)
 
 
-    kf = KFold(n_splits = 2)
-    reader = Reader(rating_scale = (1, 5))
-    data = Dataset.load_from_df(dataset_4_test[['USERID', 'ARTIST_NAME', 'VALOR']], reader)
+    items_in_order = list(item_ids_keyed)
+    for item_id in chosen:
+        index = items_in_order.index(int(item_id))
+        item = Item(index, tfidfs[int(item_id)])
+        if evaluator.rec.is_new_item(item.index):
+            evaluator.rec.register_item(item)
+        items.append(item)
 
-    for trainset, testset in kf.split(data):
-        sim_options = {'name': 'pearson', 'user_based': False}#'min_k': 1, 'k': 1000, 
-        algo = KNNBasic(sim_options = sim_options)
-        algo.fit(trainset)
+    events = []
+
+    # Calculate time of the week
+    date = datetime.now()
+    weekday_vec = np.zeros(7)
+    weekday_vec[date.weekday()] = 1
+
+    if user_id in last:
+        last_item_vec = last[user_id]['item']
+        last_weekday_vec = last[user_id]['weekday']
+    else:
+        last_item_vec = np.zeros(49)
+        last_weekday_vec = np.zeros(7)
         
-        test_set = trainset.build_anti_testset()
+    for item in items:
+        others = np.concatenate((weekday_vec, last_item_vec, last_weekday_vec))
+        events.append(Event(user, item, 1, others))
+        last[user_id] = {'item': item.feature, 'weekday': weekday_vec}
         
-        test = [x for x in test_set if x[0] is "user_001001"]
+    for e in events:
+        evaluator.rec.update(e)
 
-        predictions = algo.test(test)
+    # Re save pickles
+    pickle.dump(evaluator, open('evaluator.pckl', 'wb'))
+    pickle.dump(last, open('last.pckl', 'wb'))
 
-    def get_top_n(predictions, n = 10):
-        # First map the predictions to each user.
-        top_n = defaultdict(list)
-        for uid, iid, true_r, est, _ in predictions:
-            top_n[uid].append((iid, est))
-
-        # Then sort the predictions for each user and retrieve the k highest ones.
-        for uid, user_ratings in top_n.items():
-            user_ratings.sort(key = lambda x: x[1], reverse=True)
-            top_n[uid] = user_ratings[:n]
-
-        return top_n
+    candidates = list(set(evaluator.item_buffer))
+    recommendations = evaluator.rec.recommend(user, np.array(candidates), [0 for x in range(0, 63)])
+    top_rec = recommendations[0][-10:]
+    movie_names_recommended = []
+    for top in reversed(top_rec):
+        movie_names_recommended.append(movie_names[list(item_ids_keyed)[top]])
     
-    def get_top_n(predictions, n = 10):
-        # First map the predictions to each user.
-        top_n = defaultdict(list)
-        for uid, iid, true_r, est, _ in predictions:
-            top_n[uid].append((iid, est))
-
-        # Then sort the predictions for each user and retrieve the k highest ones.
-        for uid, user_ratings in top_n.items():
-            user_ratings.sort(key = lambda x: x[1], reverse=True)
-            top_n[uid] = user_ratings[:n]
-
-        return top_n
-
-    top_n = get_top_n(predictions, n = 10)
-    top_n = dict(top_n)
-    try:
-        return top_n['user_001001']
-    except KeyError:
-        print('recommendations not found')
-        return {}
+    return movie_names_recommended
