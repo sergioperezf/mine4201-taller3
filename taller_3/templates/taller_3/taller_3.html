@@ -1,0 +1,42 @@
+{% extends "templates/template.html" %}
+{% block estilos %}
+    {% load staticfiles %}
+{% endblock %}
+{% block jumbotron %}
+{% endblock %}
+{% block talleres %}
+	<div class="col-md-12 bajar-margin">
+		<h2>Taller 3</h2>
+		<p><a target="_blank" href="{% static 'docs/taller_3.pdf' %}">Ver el enunciado del taller</a></p>
+	</div>
+	<div class="col-md-8">
+		<form method="post">
+			{% csrf_token %}
+			Selecciona las peliculas en los que deseas basar tu recomendación:
+        	<select name="movies" multiple class="form-control" id="movies" size="10">
+				{% for movie_id, movie_name in movies %}
+				<option value="{{ movie_id }}">{{ movie_name }}</option>
+				{% endfor %}
+			</select>
+			<button type="submit" class="btn btn-success">Recomendar!</button>
+      	</form>
+	</div>
+	<div class="col-md-4">
+	{% if recommendations %}
+			<h2>Artistas recomendados</h2>
+			Basado en tus gustos, te recomendamos los siguientes artistas:
+			<ul>
+			{% for name, points in recommendations %}
+				<li><a href="https://www.last.fm/music/{{name}}" target="_blank">{{ name }}</a>.</li>
+			{% endfor %}
+			</ul>
+		{% else %}
+			<h2>No hemos encontrado recomendaciones para ti</h2>
+		{% endif %}
+	</div>
+{% endblock %}
+{% block librerias %}
+  <script src="{% static 'js/anti_csrf.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/recommend.js' %}"></script>
+{% endblock %}

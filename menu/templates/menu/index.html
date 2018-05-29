@@ -1,0 +1,24 @@
+{% extends "templates/template.html" %}
+{% block jumbotron %}
+	<div class="jumbotron">
+		<div class="container">
+{% load staticfiles %}
+			<div class="row bajar-margin">
+				<div class="col-md-4">
+					<img class="d-block w-100" src="{% static 'img/logos/uniandes.png' %}">
+				</div>
+				<div class="col-md-8 text-center">
+					<h2>Maestría en Ingeniería de la Información</h2>
+					<h2>MINE4201: Sistemas de Recomendación</h2>
+					<h2>Taller 3</h2>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+{% block talleres %}
+	<div class="col-md-12">
+		<h2>Modelos de recomendación ontológicos e integración de flujos de datos.</h2>
+		<p><a class="btn btn-primary btn-lg" href="taller_3" role="button">Entrar &raquo;</a></p>
+    </div>
+{% endblock %}
