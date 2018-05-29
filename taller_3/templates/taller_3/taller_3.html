@@ -12,7 +12,7 @@
 	<div class="col-md-8">
 		<form method="post">
 			{% csrf_token %}
-			Selecciona las peliculas en los que deseas basar tu recomendación:
+			Selecciona las peliculas en las que deseas basar tu recomendación:
         	<select name="movies" multiple class="form-control" id="movies" size="10">
 				{% for movie_id, movie_name in movies %}
 				<option value="{{ movie_id }}">{{ movie_name }}</option>
@@ -36,6 +36,7 @@
 	</div>
 {% endblock %}
 {% block librerias %}
+
   <script src="{% static 'js/anti_csrf.js' %}"></script>
   <script src="{% static 'js/main.js' %}"></script>
   <script src="{% static 'js/recommend.js' %}"></script>
